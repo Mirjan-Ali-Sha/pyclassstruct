@@ -7,7 +7,7 @@ A powerful CLI tool that converts simple Python scripts to well-organized class-
 ```bash
 pip install pyclassstruct
 ```
-OR For Development
+OR From Source Code
 
 
 ```bash
@@ -186,5 +186,6 @@ This creates a `structured/` folder with organized class files.
 ## License
 
 MIT License
+
 
 
