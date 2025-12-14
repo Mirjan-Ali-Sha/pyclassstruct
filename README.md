@@ -174,7 +174,7 @@ Convert scripts to a class-based structure:
 
 ```bash
 # Convert using auto-detection or existing classes.txt
-pyclassstruct convert ./my_scripts
+pyclassstruct convert ./tests/sample_scripts
 
 # Convert a single file
 pyclassstruct convert ./my_script.py
@@ -193,6 +193,7 @@ This creates a `structured/` folder with organized class files.
 ## License
 
 MIT License
+
 
 
 
