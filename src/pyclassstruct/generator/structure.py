@@ -112,7 +112,7 @@ class StructureGenerator:
         return output_path
     
     def _generate_files(self, output_path: Path) -> List[str]:
-        """Generate Python class files."""
+        """Generate Python class files with merge support."""
         generated = []
         
         # Get imports from analysis
@@ -130,12 +130,25 @@ class StructureGenerator:
         for filename, proposals in file_groups.items():
             filepath = output_path / filename
             
-            if len(proposals) == 1:
-                # Single class per file
-                content = build_class(proposals[0], imports)
+            # Check if file already exists - if so, try to merge
+            if filepath.exists():
+                existing_content = filepath.read_text(encoding='utf-8')
+                merged_content = self._merge_with_existing(existing_content, proposals, imports)
+                if merged_content:
+                    content = merged_content
+                else:
+                    # Fallback to generating new if merge fails
+                    if len(proposals) == 1:
+                        content = build_class(proposals[0], imports)
+                    else:
+                        content = build_module(proposals, imports)
             else:
-                # Multiple classes per file
-                content = build_module(proposals, imports)
+                if len(proposals) == 1:
+                    # Single class per file
+                    content = build_class(proposals[0], imports)
+                else:
+                    # Multiple classes per file
+                    content = build_module(proposals, imports)
             
             # Write file
             filepath.write_text(content, encoding='utf-8')
@@ -148,6 +161,106 @@ class StructureGenerator:
         generated.append(str(init_path))
         
         return generated
+    
+    def _merge_with_existing(self, existing_content: str, proposals: List[ClassProposal], imports: list) -> Optional[str]:
+        """
+        Merge new methods into existing class file.
+        
+        Preserves existing methods and adds only new ones from classes.txt.
+        
+        Args:
+            existing_content: The existing file content
+            proposals: New class proposals to merge
+            imports: Import statements
+            
+        Returns:
+            Merged content or None if merge not possible
+        """
+        import re
+        
+        try:
+            # Extract existing method names from the file
+            existing_methods = set()
+            method_pattern = r'def\s+(\w+)\s*\('
+            for match in re.finditer(method_pattern, existing_content):
+                existing_methods.add(match.group(1))
+            
+            # For each proposal, filter out methods that already exist
+            merged_proposals = []
+            for proposal in proposals:
+                new_methods = []
+                for method in proposal.methods:
+                    if method.name not in existing_methods:
+                        new_methods.append(method)
+                
+                if new_methods:
+                    # Create a modified proposal with only new methods
+                    merged_proposals.append(ClassProposal(
+                        name=proposal.name,
+                        methods=new_methods,
+                        properties=proposal.properties,
+                        description=f"Added {len(new_methods)} new method(s)"
+                    ))
+            
+            if not merged_proposals:
+                # No new methods to add, keep existing file
+                return existing_content
+            
+            # Find the last method in the class and insert new methods after it
+            # Look for the pattern: class ClassName: ... (methods) ... 
+            for proposal in merged_proposals:
+                class_pattern = rf'(class\s+{re.escape(proposal.name)}\s*:.*?)((?=\nclass\s|\Z))'
+                match = re.search(class_pattern, existing_content, re.DOTALL)
+                
+                if match:
+                    class_block = match.group(1)
+                    
+                    # Build new method definitions
+                    new_methods_code = []
+                    for method in proposal.methods:
+                        method_code = self._build_method_code(method)
+                        new_methods_code.append(method_code)
+                    
+                    # Append new methods to the class block
+                    new_code = "\n\n" + "\n\n".join(new_methods_code)
+                    updated_class = class_block.rstrip() + new_code
+                    
+                    existing_content = existing_content[:match.start()] + updated_class + existing_content[match.end():]
+            
+            return existing_content
+            
+        except Exception as e:
+            # If merge fails, return None to trigger full regeneration
+            return None
+    
+    def _build_method_code(self, method: FunctionInfo) -> str:
+        """Build a single method's code from FunctionInfo."""
+        lines = []
+        indent = "    "
+        
+        # Add decorators
+        for decorator in method.decorators:
+            lines.append(f"{indent}@{decorator}")
+        
+        # Build signature
+        args = ["self"] + [arg for arg in method.args if arg != "self"]
+        args_str = ", ".join(args)
+        
+        if method.is_async:
+            sig = f"{indent}async def {method.name}({args_str}):"
+        else:
+            sig = f"{indent}def {method.name}({args_str}):"
+        
+        lines.append(sig)
+        
+        # Add docstring
+        if method.docstring:
+            lines.append(f'{indent}    """{method.docstring}"""')
+        
+        # Add body (simplified - just pass for now, actual body would need source parsing)
+        lines.append(f"{indent}    pass  # TODO: Add implementation")
+        
+        return "\n".join(lines)
     
     def _group_proposals_for_files(self) -> Dict[str, List[ClassProposal]]:
         """Group class proposals into files."""

@@ -181,6 +181,17 @@ class DependencyAnalyzer:
             main_func = entry_points[0]
             return self._function_to_class_name(main_func)
         
+        # Strategy 4: Advanced JSON-based keyword matching with stemming and priorities
+        # NOTE: Commented out for v1.0.0 - uncomment to enable advanced matching
+        # try:
+        #     from .keyword_matcher import match_function_names
+        #     matched_class = match_function_names(func_names)
+        #     if matched_class:
+        #         return matched_class
+        # except ImportError:
+        #     # Fallback if keyword_matcher not available
+        #     pass
+        
         # Final fallback
         return self._function_to_class_name(func_names[0])
     
