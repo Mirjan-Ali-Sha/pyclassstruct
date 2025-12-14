@@ -30,9 +30,16 @@ Analyze files/folders to generate a report and classes.txt:
 
 ```bash
 # Analyze a folder
-pyclassstruct analyze ./my_scripts
+pyclassstruct analyze ./tests/sample_scripts
+```
+OR
 
-# Analyze a single file
+```bash
+pyclassstruct analyze ./tests/sample_scripts --force
+```
+
+#### Analyze a single file
+```bash
 pyclassstruct analyze ./my_script.py
 ```
 
@@ -162,8 +169,8 @@ END OF REPORT
 
 ### Convert to Structured Classes
 
-Convert scripts to class-based structure:
-**Requiremets**: classes.txt (either create this file manually or run `pyclassstruct analyze ./my_scripts` or `pyclassstruct analyze my_scripts.py`)
+Convert scripts to a class-based structure:
+**[OPTIONAL - Recommended]**: classes.txt (either create this file manually or run `pyclassstruct analyze ./my_scripts` or `pyclassstruct analyze my_scripts.py`)
 
 ```bash
 # Convert using auto-detection or existing classes.txt
@@ -186,6 +193,7 @@ This creates a `structured/` folder with organized class files.
 ## License
 
 MIT License
+
 
 
 
