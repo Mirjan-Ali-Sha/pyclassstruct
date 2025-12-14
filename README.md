@@ -5,6 +5,20 @@ A powerful CLI tool that converts simple Python scripts to well-organized class-
 ## Installation
 
 ```bash
+pip install pyclassstruct
+```
+OR For Development
+
+
+```bash
+git clone https://github.com/Mirjan-Ali-Sha/pyclassstruct.git
+```
+
+```bash
+cd pyclassstruct
+```
+
+```bash
 pip install -e .
 ```
 
@@ -61,3 +75,4 @@ DatabaseHandler: connect_db, query, close_connection
 ## License
 
 MIT License
+
