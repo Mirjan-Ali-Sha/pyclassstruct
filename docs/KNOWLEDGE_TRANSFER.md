@@ -462,6 +462,349 @@ ls ./tests/sample_scripts/structured/
 
 ---
 
+## Development Guide (For Contributors)
+
+### Setting Up Development Environment
+
+#### 1. Clone the Repository
+```bash
+git clone https://github.com/Mirjan-Ali-Sha/pyclassstruct.git
+cd pyclassstruct
+```
+
+#### 2. Create Virtual Environment
+```bash
+# Windows
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# Linux/Mac
+python -m venv .venv
+source .venv/bin/activate
+```
+
+#### 3. Install in Development Mode
+```bash
+pip install -e ".[dev]"
+```
+This installs the package in editable mode + development dependencies (pytest).
+
+#### 4. Verify Installation
+```bash
+pyclassstruct --help
+python -m pyclassstruct --help
+```
+
+---
+
+### Project Structure for Development
+
+```
+pyclassstruct/
+├── src/pyclassstruct/     # Main source code
+│   ├── analyzer/          # ADD: New analysis features here
+│   ├── generator/         # ADD: New generation features here
+│   ├── reporter/          # ADD: New reporting features here
+│   └── utils/             # ADD: New utilities here
+├── tests/
+│   ├── sample_scripts/    # ADD: New test input files here
+│   └── test_*.py          # ADD: Unit tests here (TODO)
+├── docs/                  # ADD: Documentation here
+└── pyproject.toml         # Package configuration
+```
+
+---
+
+### Development Workflow
+
+#### Step 1: Create a Feature Branch
+```bash
+git checkout -b feature/your-feature-name
+```
+
+#### Step 2: Make Changes
+- Edit source files in `src/pyclassstruct/`
+- Follow the coding standards below
+
+#### Step 3: Test Locally
+```bash
+# Reinstall to pick up changes
+pip install -e .
+
+# Test with sample scripts
+pyclassstruct analyze ./tests/sample_scripts --force
+pyclassstruct convert ./tests/sample_scripts
+
+# Check generated output
+cat ./tests/sample_scripts/structured/*.py
+```
+
+#### Step 4: Commit Changes
+```bash
+git add .
+git commit -m "feat: description of your feature"
+```
+
+#### Step 5: Push & Create Pull Request
+```bash
+git push origin feature/your-feature-name
+```
+Then create a PR on GitHub.
+
+---
+
+### Coding Standards
+
+#### File/Class Naming
+| Type      | Convention         | Example              |
+| --------- | ------------------ | -------------------- |
+| Files     | `snake_case.py`    | `class_builder.py`   |
+| Classes   | `PascalCase`       | `StructureGenerator` |
+| Functions | `snake_case`       | `build_class()`      |
+| Constants | `UPPER_SNAKE_CASE` | `DEFAULT_OUTPUT_DIR` |
+
+#### Docstrings
+Use Google-style docstrings:
+```python
+def function_name(arg1: str, arg2: int) -> bool:
+    """
+    Brief description of function.
+    
+    Args:
+        arg1: Description of arg1
+        arg2: Description of arg2
+        
+    Returns:
+        Description of return value
+        
+    Raises:
+        ValueError: When something is wrong
+    """
+    pass
+```
+
+#### Type Hints
+Always use type hints for function signatures:
+```python
+from typing import List, Dict, Optional, Tuple
+
+def analyze_file(filepath: str) -> Optional[FileAnalysis]:
+    pass
+```
+
+#### Imports Order
+1. Standard library imports
+2. Third-party imports
+3. Local imports
+
+```python
+# Standard library
+import os
+from pathlib import Path
+from typing import List
+
+# Third-party
+import click
+
+# Local
+from pyclassstruct.analyzer import analyze_file
+```
+
+---
+
+### Adding New Features
+
+#### Adding a New CLI Command
+
+1. Edit `src/pyclassstruct/cli.py`:
+```python
+@main.command()
+@click.argument('path')
+@click.option('--option', '-o', help='Description')
+def yourcommand(path, option):
+    """Command description shown in help."""
+    # Your implementation
+    click.echo("Done!")
+```
+
+2. Test:
+```bash
+pyclassstruct yourcommand ./path --option value
+```
+
+#### Adding a New Keyword
+
+1. Edit `src/pyclassstruct/analyzer/dependency.py`:
+```python
+keywords = {
+    # ... existing keywords ...
+    'yourkeyword': 'YourClassName',  # Add your keyword
+}
+```
+
+2. Test with a sample script containing that keyword.
+
+#### Adding a New Grouping Strategy
+
+1. Add method in `DependencyAnalyzer` class:
+```python
+def _group_by_your_strategy(self) -> Dict[str, Set[str]]:
+    """Group functions by your custom logic."""
+    groups = {}
+    # Your grouping logic
+    return groups
+```
+
+2. Add to `detect_class_proposals()`:
+```python
+def detect_class_proposals(self):
+    # ... existing strategies ...
+    your_groups = self._group_by_your_strategy()
+    merged = self._merge_groups(call_groups, naming_groups, state_groups, your_groups)
+```
+
+#### Adding a New Data Model
+
+1. Edit `src/pyclassstruct/analyzer/models.py`:
+```python
+@dataclass
+class YourModel:
+    """Description of your model."""
+    field1: str
+    field2: int = 0
+    field3: List[str] = field(default_factory=list)
+```
+
+2. Export from `__init__.py`:
+```python
+from .models import YourModel
+```
+
+---
+
+### Testing Guidelines
+
+#### Manual Testing
+```bash
+# Clean previous output
+rm -rf ./tests/sample_scripts/structured/
+rm -f ./tests/sample_scripts/report.txt
+rm -f ./tests/sample_scripts/classes.txt
+
+# Run full test cycle
+pyclassstruct analyze ./tests/sample_scripts --force
+pyclassstruct convert ./tests/sample_scripts
+
+# Verify output
+cat ./tests/sample_scripts/classes.txt
+cat ./tests/sample_scripts/structured/file_handler.py
+```
+
+#### Adding Unit Tests (TODO)
+Create test files in `tests/`:
+```python
+# tests/test_analyzer.py
+import pytest
+from pyclassstruct.analyzer import analyze_file
+
+def test_analyze_simple_file():
+    result = analyze_file("tests/sample_scripts/user_management.py")
+    assert result is not None
+    assert len(result.functions) > 0
+
+def test_analyze_nonexistent_file():
+    result = analyze_file("nonexistent.py")
+    assert result is None
+```
+
+Run tests:
+```bash
+pytest tests/ -v
+```
+
+---
+
+### Building & Publishing
+
+#### Build Package
+```bash
+# Install build tools
+pip install build twine
+
+# Clean previous builds
+rm -rf dist/ build/ *.egg-info/
+
+# Build
+python -m build
+
+# Verify contents
+ls dist/
+# pyclassstruct-X.X.X-py3-none-any.whl
+# pyclassstruct-X.X.X.tar.gz
+```
+
+#### Publish to PyPI
+```bash
+# Upload to TestPyPI first (optional)
+python -m twine upload --repository testpypi dist/*
+
+# Upload to PyPI
+python -m twine upload dist/*
+
+# When prompted:
+# Username: __token__
+# Password: <your-pypi-api-token>
+```
+
+#### Version Bumping
+Edit `pyproject.toml`:
+```toml
+[project]
+version = "1.0.2"  # Increment version
+```
+
+---
+
+### Common Development Tasks
+
+| Task             | Command                                     |
+| ---------------- | ------------------------------------------- |
+| Install dev mode | `pip install -e ".[dev]"`                   |
+| Run CLI          | `pyclassstruct <command>`                   |
+| Run as module    | `python -m pyclassstruct <command>`         |
+| Clean outputs    | `rm -rf ./tests/sample_scripts/structured/` |
+| Build package    | `python -m build`                           |
+| Check package    | `twine check dist/*`                        |
+
+---
+
+### Debugging Tips
+
+#### Enable Verbose Output
+Add debug prints in your code:
+```python
+import click
+click.echo(f"DEBUG: {variable}", err=True)
+```
+
+#### Check AST Parsing
+```python
+import ast
+with open('yourfile.py') as f:
+    tree = ast.parse(f.read())
+    print(ast.dump(tree, indent=2))
+```
+
+#### Check Generated Proposals
+Add to `cli.py` temporarily:
+```python
+for proposal in analysis.class_proposals:
+    click.echo(f"Class: {proposal.name}")
+    click.echo(f"  Methods: {proposal.method_names}")
+```
+
+---
+
 ## Contact
 
 **Author**: Mirjan Ali Sha  
