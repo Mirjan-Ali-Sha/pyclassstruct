@@ -191,5 +191,3 @@ This creates a `structured/` folder with organized class files.
 - 📝 **Customizable**: Edit classes.txt to define your own structure
 
 ## License
-
-MIT License
